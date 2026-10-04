@@ -6,15 +6,19 @@ const RECORDING_MIME_TYPE_PREFERENCES = [
 	"video/webm;codecs=av1",
 ] as const;
 
+// Chromium's MP4 MediaRecorder ignores the timeslice and on Apple Silicon was
+// observed to drop everything except the first/last fragment during a native
+// screen capture (a 27s webcam take kept ~0.6s). WebM streams a chunk per
+// timeslice, so VP8/VP9 (software encode, no VideoToolbox contention with the
+// native screen recorder) come first and MP4 is only a last resort.
 const WEBCAM_RECORDING_MIME_TYPE_PREFERENCES = [
-	"video/mp4;codecs=avc1.42E01E",
-	"video/mp4;codecs=avc1",
-	"video/mp4;codecs=h264",
-	"video/mp4",
-	"video/webm;codecs=h264",
+	"video/webm;codecs=vp8",
 	"video/webm;codecs=vp9",
 	"video/webm",
-	"video/webm;codecs=vp8",
+	"video/webm;codecs=h264",
+	"video/mp4;codecs=avc1.42E01E",
+	"video/mp4;codecs=avc1",
+	"video/mp4",
 ] as const;
 
 type MimeTypeSelectorOptions = {

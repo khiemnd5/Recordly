@@ -8,6 +8,7 @@ import {
 	selectRecordingMimeType,
 	selectWebcamRecordingMimeType,
 } from "./recordingMimeType";
+import { acquireWebcamStream, type WebcamLease } from "./webcamCapture";
 
 const TARGET_FRAME_RATE = 60;
 const TARGET_WIDTH = 3840;
@@ -33,9 +34,6 @@ const AUDIO_BITRATE_VOICE = 128_000;
 const AUDIO_BITRATE_SYSTEM = 192_000;
 const MIC_GAIN_BOOST = 1.4;
 const WEBCAM_BITRATE = 8_000_000;
-const WEBCAM_WIDTH = 1280;
-const WEBCAM_HEIGHT = 720;
-const WEBCAM_FRAME_RATE = 30;
 const WEBCAM_SUFFIX = "-webcam";
 const MICROPHONE_FALLBACK_ERROR_TOAST_ID = "recording-microphone-fallback-error";
 const MICROPHONE_SIDECAR_ERROR_TOAST_ID = "recording-microphone-sidecar-error";
@@ -392,6 +390,13 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const screenStream = useRef<MediaStream | null>(null);
 	const microphoneStream = useRef<MediaStream | null>(null);
 	const webcamStream = useRef<MediaStream | null>(null);
+	const webcamLease = useRef<WebcamLease | null>(null);
+	const releaseWebcamStream = useCallback(() => {
+		webcamLease.current?.release();
+		webcamLease.current = null;
+		webcamStream.current?.getTracks().forEach((track) => track.stop());
+		webcamStream.current = null;
+	}, []);
 	const mixingContext = useRef<AudioContext | null>(null);
 	const chunks = useRef<Blob[]>([]);
 	const webcamChunks = useRef<Blob[]>([]);
@@ -627,10 +632,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			microphoneStream.current = null;
 		}
 
-		if (webcamStream.current) {
-			webcamStream.current.getTracks().forEach((track) => track.stop());
-			webcamStream.current = null;
-		}
+		releaseWebcamStream();
 
 		if (mixingContext.current) {
 			mixingContext.current.close().catch(() => undefined);
@@ -654,7 +656,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			micFallbackRecorderMetadata.current = null;
 			resetMicFallbackTimingDiagnostics();
 		}
-	}, [resetMicFallbackTimingDiagnostics]);
+	}, [resetMicFallbackTimingDiagnostics, releaseWebcamStream]);
 
 	const appendMicFallbackChunk = useCallback(
 		(event: BlobEvent) => {
@@ -1017,21 +1019,8 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		}
 
 		try {
-			webcamStream.current = await navigator.mediaDevices.getUserMedia({
-				video: webcamDeviceId
-					? {
-							deviceId: { exact: webcamDeviceId },
-							width: { ideal: WEBCAM_WIDTH },
-							height: { ideal: WEBCAM_HEIGHT },
-							frameRate: { ideal: WEBCAM_FRAME_RATE, max: WEBCAM_FRAME_RATE },
-						}
-					: {
-							width: { ideal: WEBCAM_WIDTH },
-							height: { ideal: WEBCAM_HEIGHT },
-							frameRate: { ideal: WEBCAM_FRAME_RATE, max: WEBCAM_FRAME_RATE },
-						},
-				audio: false,
-			});
+			webcamLease.current = await acquireWebcamStream(webcamDeviceId);
+			webcamStream.current = webcamLease.current.stream;
 
 			const mimeType = selectWebcamMimeType();
 			webcamChunks.current = [];
@@ -1092,10 +1081,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 					webcamStopResolver.current = null;
 					webcamRecorder.current = null;
 					webcamStartTime.current = null;
-					if (webcamStream.current) {
-						webcamStream.current.getTracks().forEach((track) => track.stop());
-						webcamStream.current = null;
-					}
+					releaseWebcamStream();
 				}
 			};
 		} catch (error) {
@@ -1109,12 +1095,15 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			webcamRecorder.current = null;
 			webcamStartTime.current = null;
 			webcamTimeOffsetMs.current = 0;
-			if (webcamStream.current) {
-				webcamStream.current.getTracks().forEach((track) => track.stop());
-				webcamStream.current = null;
-			}
+			releaseWebcamStream();
 		}
-	}, [getRecordingDurationMs, selectWebcamMimeType, webcamDeviceId, webcamEnabled]);
+	}, [
+		getRecordingDurationMs,
+		selectWebcamMimeType,
+		webcamDeviceId,
+		webcamEnabled,
+		releaseWebcamStream,
+	]);
 
 	/** Start the prepared webcam MediaRecorder. Call after main recording begins. */
 	const beginWebcamCapture = useCallback(() => {
@@ -2390,8 +2379,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		webcamRecorder.current = null;
 		webcamStartTime.current = null;
 		webcamTimeOffsetMs.current = 0;
-		webcamStream.current?.getTracks().forEach((t) => t.stop());
-		webcamStream.current = null;
+		releaseWebcamStream();
 		pendingWebcamPathPromise.current = null;
 		resolvedWebcamPath.current = null;
 
@@ -2419,6 +2407,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		markRecordingResumed,
 		recording,
 		stopMicFallbackRecorder,
+		releaseWebcamStream,
 	]);
 
 	const toggleRecording = async () => {

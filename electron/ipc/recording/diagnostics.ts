@@ -541,11 +541,20 @@ export async function getCompanionAudioFallbackInfo(videoPath: string) {
 			// the microphone while system audio is captured), so returning the video
 			// alone drops the mic entirely.  Hand over both mac sidecars instead and
 			// let the renderer route them as independent system/mic tracks.
+			// With system audio on, the native helper skips the microphone, so the
+			// mic comes from the browser fallback recorder as a non-mac `.mic.wav`
+			// sidecar. Keep it, otherwise the (authoritative) sidecars play only
+			// the system track and the voice is silently lost.
 			paths = Array.from(
 				new Set(
-					companionCandidates.flatMap((candidate) =>
-						candidate.platform === "mac" ? candidate.usablePaths : [],
-					),
+					companionCandidates.flatMap((candidate) => {
+						if (candidate.platform === "mac") {
+							return candidate.usablePaths;
+						}
+						return candidate.usablePaths.includes(candidate.micPath)
+							? [candidate.micPath]
+							: [];
+					}),
 				),
 			);
 		} else {

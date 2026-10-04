@@ -1,4 +1,5 @@
 import { type PointerEvent, useCallback, useEffect, useRef, useState } from "react";
+import { acquireWebcamStream, type WebcamLease } from "../../../hooks/webcamCapture";
 import { canShowFloatingWebcamPreview } from "../floatingWebcamPreview";
 
 const WEBCAM_PREVIEW_DRAG_THRESHOLD = 6;
@@ -45,6 +46,7 @@ export function useWebcamPreviewOverlay({
 	const recordingWebcamPreviewRef = useRef<HTMLVideoElement | null>(null);
 	const recordingWebcamPreviewContainerRef = useRef<HTMLDivElement | null>(null);
 	const previewStreamRef = useRef<MediaStream | null>(null);
+	const previewLeaseRef = useRef<WebcamLease | null>(null);
 	const previewDragMoveRafRef = useRef<number | null>(null);
 	const previewDragPendingPointerRef = useRef<{ clientX: number; clientY: number } | null>(null);
 	const webcamPreviewDragStartRef = useRef<{
@@ -240,27 +242,15 @@ export function useWebcamPreviewOverlay({
 			}
 
 			try {
-				const previewStream = await navigator.mediaDevices.getUserMedia({
-					video: webcamDeviceId
-						? {
-								deviceId: { exact: webcamDeviceId },
-								width: { ideal: 320 },
-								height: { ideal: 320 },
-								frameRate: { ideal: 24, max: 30 },
-							}
-						: {
-								width: { ideal: 320 },
-								height: { ideal: 320 },
-								frameRate: { ideal: 24, max: 30 },
-							},
-					audio: false,
-				});
+				const lease = await acquireWebcamStream(webcamDeviceId);
+				const previewStream = lease.stream;
 
 				if (!mounted) {
-					previewStream.getTracks().forEach((track) => track.stop());
+					lease.release();
 					return;
 				}
 
+				previewLeaseRef.current = lease;
 				previewStreamRef.current = previewStream;
 				attachPreviewStreamToNode(webcamPreviewRef.current);
 				attachPreviewStreamToNode(recordingWebcamPreviewRef.current);
@@ -284,6 +274,8 @@ export function useWebcamPreviewOverlay({
 					videoElement.srcObject = null;
 				});
 			previewStream?.getTracks().forEach((track) => track.stop());
+			previewLeaseRef.current?.release();
+			previewLeaseRef.current = null;
 			if (previewStreamRef.current === previewStream) {
 				previewStreamRef.current = null;
 			}

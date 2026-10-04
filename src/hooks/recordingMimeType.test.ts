@@ -55,23 +55,27 @@ describe("selectRecordingMimeType", () => {
 		expect(mimeType).toBeUndefined();
 	});
 
-	it("prefers MP4/H.264 for webcam captures when supported", () => {
+	it("prefers chunk-streaming WebM (VP8) for webcam captures when supported", () => {
 		const mimeType = selectWebcamRecordingMimeType({
 			isTypeSupported: (type) =>
-				["video/mp4;codecs=avc1.42E01E", "video/webm;codecs=vp9"].includes(type),
+				[
+					"video/mp4;codecs=avc1.42E01E",
+					"video/webm;codecs=vp8",
+					"video/webm;codecs=vp9",
+				].includes(type),
+			canPlayType: () => "probably",
+		});
+
+		expect(mimeType).toBe("video/webm;codecs=vp8");
+	});
+
+	it("falls back to MP4 webcam capture when WebM is unavailable", () => {
+		const mimeType = selectWebcamRecordingMimeType({
+			isTypeSupported: (type) => type === "video/mp4;codecs=avc1.42E01E",
 			canPlayType: () => "probably",
 		});
 
 		expect(mimeType).toBe("video/mp4;codecs=avc1.42E01E");
-	});
-
-	it("falls back to WebM webcam capture when MP4 is unavailable", () => {
-		const mimeType = selectWebcamRecordingMimeType({
-			isTypeSupported: (type) => ["video/webm;codecs=vp9", "video/webm"].includes(type),
-			canPlayType: () => "probably",
-		});
-
-		expect(mimeType).toBe("video/webm;codecs=vp9");
 	});
 
 	it("maps recording MIME types to the saved file extension", () => {
