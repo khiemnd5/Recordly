@@ -5,6 +5,7 @@ import {
 	VideoCameraSlash as VideoOff,
 } from "@/components/ui/icons";
 import { useScopedT } from "@/contexts/I18nContext";
+import { formatFullCamShortcut } from "@/lib/fullCamShortcut";
 import { DropdownItem, HudPopover } from "./PopoverScaffold";
 import { useLaunchPopoverCoordinator } from "./LaunchPopoverCoordinator";
 import type { DeviceOption } from "./launchPopoverTypes";
@@ -93,6 +94,17 @@ export function WebcamPopover({
 			{!webcamEnabled && (
 				<div className="px-3 py-2 text-xs text-[var(--launch-text-muted)]">
 					{t("recording.selectWebcamToEnable")}
+				</div>
+			)}
+			{webcamEnabled && (
+				<div className="px-3 py-1 text-[11px] text-[var(--launch-text-muted)]">
+					{t("recording.fullCamHint", undefined, {
+						shortcut: formatFullCamShortcut(
+							typeof navigator !== "undefined" && /mac/i.test(navigator.platform)
+								? "darwin"
+								: "other",
+						),
+					})}
 				</div>
 			)}
 			{showWebcamControls && (

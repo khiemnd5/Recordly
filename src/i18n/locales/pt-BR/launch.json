@@ -39,6 +39,8 @@
 		"language": "Idioma",
 		"paused": "PAUSADO",
 		"rec": "GRAV",
+		"fullCam": "CÂMERA CHEIA",
+		"fullCamHint": "Ao gravar, pressione {{shortcut}} para alternar a câmera cheia",
 		"resume": "Retomar",
 		"pause": "Pausar",
 		"stop": "Parar",

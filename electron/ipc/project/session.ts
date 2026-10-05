@@ -5,6 +5,26 @@ import { RECORDING_SESSION_MANIFEST_SUFFIX } from "../constants";
 import type { RecordingSessionData, RecordingSessionManifest } from "../types";
 import { normalizeVideoSourcePath, parseJsonWithByteOrderMark } from "../utils";
 
+const MAX_FULL_CAM_RANGES = 500;
+
+export function sanitizeFullCamRanges(
+	value: unknown,
+): { startMs: number; endMs: number }[] | undefined {
+	if (!Array.isArray(value)) return undefined;
+	const ranges = value
+		.filter(
+			(range): range is { startMs: number; endMs: number } =>
+				Number.isFinite(range?.startMs) &&
+				Number.isFinite(range?.endMs) &&
+				range.startMs >= 0 &&
+				range.endMs > range.startMs,
+		)
+		.map(({ startMs, endMs }) => ({ startMs: Math.round(startMs), endMs: Math.round(endMs) }))
+		.sort((a, b) => a.startMs - b.startMs)
+		.slice(0, MAX_FULL_CAM_RANGES);
+	return ranges.length > 0 ? ranges : undefined;
+}
+
 function normalizeRecordingTimeOffsetMs(value: unknown): number {
 	return typeof value === "number" && Number.isFinite(value) ? Math.round(value) : 0;
 }
@@ -36,6 +56,9 @@ export async function persistRecordingSessionManifest(
 		videoFileName: path.basename(normalizedVideoPath),
 		webcamFileName: path.basename(normalizedWebcamPath),
 		timeOffsetMs: normalizeRecordingTimeOffsetMs(session.timeOffsetMs),
+		...(sanitizeFullCamRanges(session.fullCamRanges)
+			? { fullCamRanges: sanitizeFullCamRanges(session.fullCamRanges) }
+			: {}),
 	};
 
 	await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2), "utf-8");
@@ -67,6 +90,7 @@ export async function resolveRecordingSessionManifest(
 				videoPath: normalizedVideoPath,
 				webcamPath: null,
 				timeOffsetMs: normalizeRecordingTimeOffsetMs(parsed.timeOffsetMs),
+				fullCamRanges: sanitizeFullCamRanges(parsed.fullCamRanges),
 			};
 		}
 
@@ -80,6 +104,7 @@ export async function resolveRecordingSessionManifest(
 			videoPath: normalizedVideoPath,
 			webcamPath: webcamExists ? webcamPath : null,
 			timeOffsetMs: normalizeRecordingTimeOffsetMs(parsed.timeOffsetMs),
+			fullCamRanges: sanitizeFullCamRanges(parsed.fullCamRanges),
 		};
 	} catch {
 		return null;

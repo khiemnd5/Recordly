@@ -65,8 +65,12 @@ export function useVideoEditorPresets({
 			borderRadiusUnit: "percent",
 			padding: { ...appearance.padding },
 			cropRegion: { ...appearance.cropRegion },
-			webcam: (({ sourcePath: _sourcePath, visibleRanges: _visibleRanges, ...settings }) =>
-				settings)(appearance.webcam),
+			webcam: (({
+				sourcePath: _sourcePath,
+				visibleRanges: _visibleRanges,
+				fullCamRanges: _fullCamRanges,
+				...settings
+			}) => settings)(appearance.webcam),
 			aspectRatio,
 			autoCaptionSettings: { ...timeline.autoCaptionSettings },
 		}),
@@ -116,6 +120,7 @@ export function useVideoEditorPresets({
 				...snapshot.webcam,
 				sourcePath: current.sourcePath,
 				visibleRanges: current.visibleRanges,
+				fullCamRanges: current.fullCamRanges,
 			}));
 			setAspectRatio(snapshot.aspectRatio);
 			timeline.setAutoCaptionSettings({ ...snapshot.autoCaptionSettings });

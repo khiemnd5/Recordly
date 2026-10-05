@@ -39,6 +39,8 @@
 		"language": "Sprache",
 		"paused": "PAUSIERT",
 		"rec": "AUFNAHME",
+		"fullCam": "VOLL-CAM",
+		"fullCamHint": "Beim Aufnehmen {{shortcut}} drücken, um Voll-Cam umzuschalten",
 		"resume": "Fortsetzen",
 		"pause": "Pause",
 		"stop": "Stopp",

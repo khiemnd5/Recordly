@@ -39,6 +39,8 @@
 		"language": "언어",
 		"paused": "일시 정지",
 		"rec": "녹화 중",
+		"fullCam": "전체 화면 캠",
+		"fullCamHint": "녹화 중 {{shortcut}} 키로 전체 화면 캠 전환",
 		"resume": "계속",
 		"pause": "일시 정지",
 		"stop": "중지",

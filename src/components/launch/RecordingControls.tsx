@@ -15,6 +15,7 @@ interface RecordingControlsProps {
 	onHome: () => void;
 	paused: boolean;
 	microphoneEnabled: boolean;
+	fullCamActive?: boolean;
 	elapsed: number;
 	onPauseResume: () => void;
 	onStopRecording: () => void;
@@ -26,6 +27,7 @@ export function RecordingControls({
 	onHome,
 	paused,
 	microphoneEnabled,
+	fullCamActive = false,
 	elapsed,
 	onPauseResume,
 	onStopRecording,
@@ -59,6 +61,14 @@ export function RecordingControls({
 				</span>
 				{paused && (
 					<span className="text-xs text-muted-foreground">{t("recording.paused")}</span>
+				)}
+				{fullCamActive && !paused && (
+					<span
+						className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-accent"
+						aria-live="polite"
+					>
+						{t("recording.fullCam")}
+					</span>
 				)}
 			</div>
 			<Tooltip>

@@ -44,7 +44,11 @@ import {
 } from "@/components/video-editor/videoPlayback/motionSmoothing";
 import { getSceneEffectMetrics } from "@/components/video-editor/videoPlayback/sceneEffects";
 import { resolveSceneZoomTarget } from "@/components/video-editor/videoPlayback/sceneMotion";
-import { getWebcamMediaTargetTimeSeconds, isWebcamVisibleAtSourceTime } from "@/components/video-editor/videoPlayback/webcamSync";
+import { getFullCamBlend, lerp } from "@/components/video-editor/fullCam";
+import {
+	getWebcamMediaTargetTimeSeconds,
+	isWebcamVisibleAtSourceTime,
+} from "@/components/video-editor/videoPlayback/webcamSync";
 import {
 	applyZoomTransform,
 	computeZoomTransform,
@@ -75,7 +79,6 @@ import { renderAnnotations } from "./annotationRenderer";
 import { renderCaptions } from "./captionRenderer";
 import { ForwardFrameSource } from "./forwardFrameSource";
 import { resolveMediaElementSource } from "./localMediaSource";
-
 
 interface FrameRenderConfig {
 	timelineEffects?: boolean;
@@ -1739,7 +1742,11 @@ export class FrameRenderer {
 		const webcam = this.config.webcam;
 		const webcamDecodedFrame = this.webcamDecodedFrame;
 		const webcamVideo = this.webcamVideoElement;
-		if (!webcam?.enabled || !isWebcamVisibleAtSourceTime(webcam, this.currentVideoTime) || (!webcamDecodedFrame && !webcamVideo)) {
+		if (
+			!webcam?.enabled ||
+			!isWebcamVisibleAtSourceTime(webcam, this.currentVideoTime) ||
+			(!webcamDecodedFrame && !webcamVideo)
+		) {
 			return;
 		}
 
@@ -1849,7 +1856,7 @@ export class FrameRenderer {
 			sourceHeight,
 			webcam.cropRegion,
 		);
-		const dimensions = getWebcamOverlayDimensionsPx({
+		const baseDimensions = getWebcamOverlayDimensionsPx({
 			containerWidth: width,
 			containerHeight: height,
 			widthPercent,
@@ -1858,22 +1865,32 @@ export class FrameRenderer {
 			zoomScale: this.animationState.appliedScale || 1,
 			reactToZoom: webcam.reactToZoom ?? true,
 		});
-		const { x, y } = getWebcamOverlayPosition({
+		const basePosition = getWebcamOverlayPosition({
 			containerWidth: width,
 			containerHeight: height,
-			width: dimensions.width,
-			height: dimensions.height,
+			width: baseDimensions.width,
+			height: baseDimensions.height,
 			margin,
 			positionPreset: webcam.positionPreset ?? webcam.corner,
 			positionX: webcam.positionX ?? 1,
 			positionY: webcam.positionY ?? 1,
 			legacyCorner: webcam.corner,
 		});
-		const radius = getWebcamCornerRadiusPx(
+		const baseRadius = getWebcamCornerRadiusPx(
 			webcam.roundness ?? DEFAULT_WEBCAM_ROUNDNESS,
-			dimensions.width,
-			dimensions.height,
+			baseDimensions.width,
+			baseDimensions.height,
 		);
+		// Full cam: morph the bubble to the whole frame (matches the editor preview).
+		const fullCamBlend = getFullCamBlend(webcam.fullCamRanges, this.currentVideoTime * 1000);
+		const dimensions = {
+			width: lerp(baseDimensions.width, width, fullCamBlend),
+			height: lerp(baseDimensions.height, height, fullCamBlend),
+		};
+		const x = lerp(basePosition.x, 0, fullCamBlend);
+		const y = lerp(basePosition.y, 0, fullCamBlend);
+		const radius = lerp(baseRadius, 0, fullCamBlend);
+		const shadowValue = (webcam.shadow ?? 0) * (1 - fullCamBlend);
 		const bubbleWidth = Math.max(1, Math.ceil(dimensions.width));
 		const bubbleHeight = Math.max(1, Math.ceil(dimensions.height));
 		if (bubbleCanvas.width !== bubbleWidth || bubbleCanvas.height !== bubbleHeight) {
@@ -1934,10 +1951,10 @@ export class FrameRenderer {
 		}
 		bubbleCtx.restore();
 
-		if ((webcam.shadow ?? 0) > 0) {
+		if (shadowValue > 0) {
 			const shadowSize = Math.min(dimensions.width, dimensions.height);
 			ctx.save();
-			ctx.filter = getWebcamShadowFilter(shadowSize, webcam.shadow);
+			ctx.filter = getWebcamShadowFilter(shadowSize, shadowValue);
 			ctx.drawImage(bubbleCanvas, x, y, dimensions.width, dimensions.height);
 			ctx.restore();
 			return;

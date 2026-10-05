@@ -47,6 +47,8 @@ export type RecordingSessionData = {
 	videoPath: string;
 	webcamPath?: string | null;
 	timeOffsetMs?: number;
+	/** Source-time ms ranges recorded with the full-cam hotkey. */
+	fullCamRanges?: { startMs: number; endMs: number }[];
 	hideOverlayCursorByDefault?: boolean;
 };
 
@@ -60,6 +62,7 @@ export type RecordingSessionManifest = {
 	videoFileName: string;
 	webcamFileName?: string | null;
 	timeOffsetMs?: number;
+	fullCamRanges?: { startMs: number; endMs: number }[];
 };
 
 export type ProjectLibraryEntry = {

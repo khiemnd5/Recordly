@@ -27,6 +27,7 @@ import {
 	isVideoWallpaperSource,
 } from "@/lib/wallpapers";
 import { type AspectRatio } from "@/utils/aspectRatioUtils";
+import { formatFullCamShortcut } from "../../lib/fullCamShortcut";
 import { useI18n, useScopedT } from "../../contexts/I18nContext";
 import type { AppLocale } from "../../i18n/config";
 import { SUPPORTED_LOCALES } from "../../i18n/config";
@@ -93,6 +94,7 @@ import {
 	cursorSetAssets,
 	getCursorStyleSizeMultiplier,
 } from "./videoPlayback/uploadedCursorAssets";
+import { addFullCamRange } from "./fullCam";
 import { WebcamCropControl } from "./WebcamCropControl";
 import {
 	getCropMatchedWebcamHeightPercent,
@@ -567,6 +569,15 @@ const ZOOM_DEPTH_OPTIONS: Array<{ depth: ZoomDepth; label: string }> = [
 	{ depth: 5, label: "3.5×" },
 	{ depth: 6, label: "5×" },
 ];
+
+const FULL_CAM_DEFAULT_LENGTH_MS = 3000;
+
+function formatFullCamTime(ms: number): string {
+	const totalSeconds = Math.max(0, ms) / 1000;
+	const minutes = Math.floor(totalSeconds / 60);
+	const seconds = totalSeconds - minutes * 60;
+	return `${minutes}:${seconds.toFixed(1).padStart(4, "0")}`;
+}
 
 const WEBCAM_POSITION_PRESETS: Array<{
 	preset: Exclude<WebcamPositionPreset, "custom">;
@@ -1497,11 +1508,6 @@ export function SettingsPanel({
 		removeBackgroundStateRef.current = null;
 	};
 
-	const resetWebcamSection = () => {
-		if (!onWebcamChange) return;
-		onWebcamChange({ ...defaultWebcam });
-	};
-
 	const resetCropSection = () => {
 		onCropChange?.(DEFAULT_CROP_REGION);
 	};
@@ -1509,6 +1515,34 @@ export function SettingsPanel({
 	const updateWebcam = (patch: Partial<WebcamOverlaySettings>) => {
 		if (!webcam || !onWebcamChange) return;
 		onWebcamChange({ ...webcam, ...patch });
+	};
+
+	const fullCamRanges = webcam?.fullCamRanges ?? [];
+	const shortcutPlatform =
+		typeof navigator !== "undefined" && /mac/i.test(navigator.platform) ? "darwin" : "other";
+	const addFullCamAtPlayhead = () => {
+		const startMs = Math.max(0, Math.round(webcamPreviewCurrentTime * 1000));
+		updateWebcam({
+			fullCamRanges: addFullCamRange(
+				fullCamRanges,
+				startMs,
+				startMs + FULL_CAM_DEFAULT_LENGTH_MS,
+			),
+		});
+	};
+	const removeFullCam = (range: { startMs: number; endMs: number }) => {
+		updateWebcam({
+			fullCamRanges: fullCamRanges.filter(
+				(candidate) =>
+					candidate.startMs !== range.startMs || candidate.endMs !== range.endMs,
+			),
+		});
+	};
+
+	const resetWebcamSection = () => {
+		if (!onWebcamChange) return;
+		// Full cam segments are project data (like the footage), not an appearance default.
+		onWebcamChange({ ...defaultWebcam, fullCamRanges: webcam?.fullCamRanges });
 	};
 
 	const applyWebcamPositionPreset = (preset: WebcamPositionPreset) => {
@@ -3021,6 +3055,68 @@ export function SettingsPanel({
 									checked={webcam?.enabled ?? false}
 									onCheckedChange={(enabled) => updateWebcam({ enabled })}
 								/>
+							</div>
+							<div className="flex flex-col gap-2 py-2">
+								<div className="flex items-center justify-between gap-2">
+									<span className="text-xs text-muted-foreground">
+										{tSettings("effects.fullCam", "Full cam")}
+									</span>
+									<Button
+										variant="ghost"
+										size="sm"
+										className="text-xs"
+										type="button"
+										disabled={!webcam?.enabled || !webcam?.sourcePath}
+										onClick={addFullCamAtPlayhead}
+									>
+										{tSettings(
+											"effects.fullCamAdd",
+											"Add full cam at playhead",
+										)}
+									</Button>
+								</div>
+								<p className="text-[11px] leading-snug text-muted-foreground/80">
+									{tSettings(
+										"effects.fullCamHint",
+										"Make the webcam fill the whole frame, then return to your layout. While recording, press {{shortcut}} to toggle it.",
+										{ shortcut: formatFullCamShortcut(shortcutPlatform) },
+									)}
+								</p>
+								{fullCamRanges.length === 0 ? (
+									<p className="text-[11px] text-muted-foreground/60">
+										{tSettings(
+											"effects.fullCamEmpty",
+											"No full cam segments yet",
+										)}
+									</p>
+								) : (
+									<ul className="flex flex-col gap-1">
+										{fullCamRanges.map((range) => (
+											<li
+												key={`${range.startMs}-${range.endMs}`}
+												className="flex items-center justify-between rounded-md bg-foreground/5 px-2 py-1 text-xs tabular-nums"
+											>
+												<span>
+													{formatFullCamTime(range.startMs)} –{" "}
+													{formatFullCamTime(range.endMs)}
+												</span>
+												<Button
+													variant="ghost"
+													size="sm"
+													className="h-6 px-2 text-xs"
+													type="button"
+													aria-label={tSettings(
+														"effects.fullCamRemove",
+														"Remove segment",
+													)}
+													onClick={() => removeFullCam(range)}
+												>
+													✕
+												</Button>
+											</li>
+										))}
+									</ul>
+								)}
 							</div>
 							{advanced && (
 								<>

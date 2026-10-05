@@ -39,6 +39,8 @@
 		"language": "Idioma",
 		"paused": "PAUSADO",
 		"rec": "REC",
+		"fullCam": "CÁMARA COMPLETA",
+		"fullCamHint": "Al grabar, pulsa {{shortcut}} para alternar cámara completa",
 		"resume": "Reanudar",
 		"pause": "Pausa",
 		"stop": "Detener",

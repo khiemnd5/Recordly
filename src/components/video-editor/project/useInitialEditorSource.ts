@@ -1,4 +1,5 @@
 /* biome-ignore-all lint/correctness/useExhaustiveDependencies: editor state setters are stable and initial source loading intentionally runs once per launch configuration. */
+import { normalizeFullCamRanges } from "../fullCam";
 import { type MutableRefObject, useEffect, useRef } from "react";
 import { fromFileUrl, resolveVideoUrl } from "../projectPersistence";
 import type { getDevOpenRecordingConfig, getSmokeExportConfig } from "../smokeExportConfig";
@@ -99,6 +100,7 @@ export function useInitialEditorSource({
 					appearance.setWebcam((previous) => ({
 						...previous,
 						visibleRanges: undefined,
+						fullCamRanges: undefined,
 						enabled: Boolean(webcamPath),
 						sourcePath: webcamPath,
 						timeOffsetMs: DEFAULT_WEBCAM_TIME_OFFSET_MS,
@@ -135,6 +137,9 @@ export function useInitialEditorSource({
 					appearance.setWebcam((previous) => ({
 						...previous,
 						visibleRanges: undefined,
+						fullCamRanges: webcamPath
+							? normalizeFullCamRanges(smokeConfig.webcamFullCamRanges)
+							: undefined,
 						enabled: Boolean(webcamPath),
 						sourcePath: webcamPath,
 						timeOffsetMs: DEFAULT_WEBCAM_TIME_OFFSET_MS,
@@ -171,6 +176,9 @@ export function useInitialEditorSource({
 					appearance.setWebcam((previous) => ({
 						...previous,
 						visibleRanges: undefined,
+						fullCamRanges: sessionResult.session?.webcamPath
+							? normalizeFullCamRanges(sessionResult.session.fullCamRanges)
+							: undefined,
 						enabled: Boolean(sessionResult.session?.webcamPath),
 						sourcePath: sessionResult.session?.webcamPath ?? null,
 						timeOffsetMs:
@@ -196,6 +204,7 @@ export function useInitialEditorSource({
 				appearance.setWebcam((previous) => ({
 					...previous,
 					visibleRanges: undefined,
+					fullCamRanges: undefined,
 					enabled: false,
 					sourcePath: null,
 					timeOffsetMs: DEFAULT_WEBCAM_TIME_OFFSET_MS,
@@ -224,6 +233,11 @@ export function useInitialEditorSource({
 			appearance.setWebcam((previous) => ({
 				...previous,
 				visibleRanges: undefined,
+				fullCamRanges: webcamPath
+					? normalizeFullCamRanges(session.fullCamRanges).length > 0
+						? normalizeFullCamRanges(session.fullCamRanges)
+						: previous.fullCamRanges
+					: undefined,
 				enabled: Boolean(webcamPath),
 				sourcePath: webcamPath,
 				timeOffsetMs: webcamPath

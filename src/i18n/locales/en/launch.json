@@ -39,6 +39,8 @@
 		"language": "Language",
 		"paused": "PAUSED",
 		"rec": "REC",
+		"fullCam": "FULL CAM",
+		"fullCamHint": "While recording, press {{shortcut}} to toggle full cam",
 		"resume": "Resume",
 		"pause": "Pause",
 		"stop": "Stop",

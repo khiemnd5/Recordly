@@ -38,6 +38,7 @@ import {
 import { MicPopover } from "./popovers/MicPopover";
 import { SourcePopover } from "./popovers/SourcePopover";
 import { WebcamPopover } from "./popovers/WebcamPopover";
+import { FullCamOverlay } from "./FullCamOverlay";
 import { RecordingControls } from "./RecordingControls";
 
 export function LaunchWindow() {
@@ -73,6 +74,7 @@ function LaunchWindowContent() {
 		setWebcamDeviceId,
 		countdownDelay,
 		setCountdownDelay,
+		fullCamActive,
 		preparePermissions,
 	} = useScreenRecorder();
 
@@ -208,6 +210,7 @@ function LaunchWindowContent() {
 			onHome={openHome}
 			paused={paused}
 			microphoneEnabled={microphoneEnabled}
+			fullCamActive={fullCamActive}
 			elapsed={elapsed}
 			onPauseResume={paused ? resumeRecording : pauseRecording}
 			onStopRecording={toggleRecording}
@@ -420,6 +423,11 @@ function LaunchWindowContent() {
 		<HudInteractionContext.Provider
 			value={{ onMouseEnter: handleHudMouseEnter, onMouseLeave: handleHudMouseLeave }}
 		>
+			<FullCamOverlay
+				enabled={recording && webcamEnabled && hudOverlayMousePassthroughSupported === true}
+				active={fullCamActive && !paused}
+				deviceId={webcamDeviceId}
+			/>
 			<div
 				className="w-full flex justify-center bg-transparent overflow-visible items-end pb-5 pointer-events-none"
 				style={{ height: "100vh" }}
@@ -501,7 +509,7 @@ function LaunchWindowContent() {
 						{showRecordingWebcamPreview && (
 							<div
 								ref={recordingWebcamPreviewContainerRef}
-								className={`${styles.recordingWebcamPreview} ${styles.electronNoDrag} pointer-events-auto`}
+								className={`${styles.recordingWebcamPreview} ${styles.electronNoDrag} pointer-events-auto ${fullCamActive ? styles.fullCamHidesPreview : ""}`}
 								data-hud-interactive
 								title={t("recording.webcam")}
 								style={{

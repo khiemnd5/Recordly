@@ -39,6 +39,8 @@
 		"language": "Taal",
 		"paused": "GEPAUZEERD",
 		"rec": "OPN",
+		"fullCam": "VOLLEDIGE CAM",
+		"fullCamHint": "Druk tijdens opnemen op {{shortcut}} voor volledige cam",
 		"resume": "Hervatten",
 		"pause": "Pauzeren",
 		"stop": "Stoppen",

@@ -8,6 +8,7 @@ import {
 	selectRecordingMimeType,
 	selectWebcamRecordingMimeType,
 } from "./recordingMimeType";
+import { createFullCamTracker } from "./fullCamTracker";
 import { acquireWebcamStream, type WebcamLease } from "./webcamCapture";
 
 const TARGET_FRAME_RATE = 60;
@@ -145,6 +146,8 @@ type UseScreenRecorderReturn = {
 	setWebcamEnabled: (enabled: boolean) => void;
 	webcamDeviceId: string | undefined;
 	setWebcamDeviceId: (deviceId: string | undefined) => void;
+	/** True while a full cam segment is being recorded. */
+	fullCamActive: boolean;
 	countdownDelay: number;
 	setCountdownDelay: (delay: number) => void;
 };
@@ -384,6 +387,8 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const [webcamEnabled, setWebcamEnabled] = useState(false);
 	const [webcamDeviceId, setWebcamDeviceId] = useState<string | undefined>(undefined);
 	const [countdownDelay, setCountdownDelayState] = useState(3);
+	const [fullCamActive, setFullCamActive] = useState(false);
+	const fullCamTracker = useRef(createFullCamTracker());
 	const mediaRecorder = useRef<MediaRecorder | null>(null);
 	const webcamRecorder = useRef<MediaRecorder | null>(null);
 	const stream = useRef<MediaStream | null>(null);
@@ -497,6 +502,14 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		startTime.current = startedAt;
 		accumulatedPausedDurationMs.current = 0;
 		pauseStartedAtMs.current = null;
+		fullCamTracker.current.reset();
+		setFullCamActive(false);
+	}, []);
+
+	/** Session fields for the full cam segments of the recording that just ended. */
+	const getFullCamSessionPatch = useCallback(() => {
+		const fullCamRanges = fullCamTracker.current.snapshot();
+		return fullCamRanges.length > 0 ? { fullCamRanges } : {};
 	}, []);
 
 	const markRecordingPaused = useCallback((pausedAt: number) => {
@@ -749,6 +762,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 						videoPath,
 						webcamPath,
 						timeOffsetMs: webcamTimeOffsetMs.current,
+						...getFullCamSessionPatch(),
 						hideOverlayCursorByDefault: shouldHideOverlayCursor,
 					});
 				} else {
@@ -774,7 +788,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 				`[PERF:RENDERER] Finalize Session & Switch to Editor: COMPLETED in ${(performance.now() - start).toFixed(2)}ms`,
 			);
 		},
-		[],
+		[getFullCamSessionPatch],
 	);
 
 	const closeMicFallbackPauseInterval = useCallback((now = performance.now()) => {
@@ -947,6 +961,12 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		const recorder = webcamRecorder.current;
 		const pending = webcamStopPromise.current;
 
+		// Every stop path goes through here: close a full cam segment left open.
+		if (fullCamTracker.current.isActive()) {
+			fullCamTracker.current.close(getRecordingDurationMs(Date.now()));
+			setFullCamActive(false);
+		}
+
 		if (!recorder) {
 			const result = pending ? await pending : resolvedWebcamPath.current;
 			webcamStopPromise.current = null;
@@ -968,7 +988,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		resolvedWebcamPath.current = result ?? null;
 		webcamRecorder.current = null;
 		return result ?? null;
-	}, []);
+	}, [getRecordingDurationMs]);
 
 	const recoverNativeRecordingSession = useCallback(
 		async (
@@ -1369,6 +1389,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 										videoPath: finalPath,
 										webcamPath,
 										timeOffsetMs: webcamTimeOffsetMs.current,
+										...getFullCamSessionPatch(),
 										hideOverlayCursorByDefault:
 											hideEditorOverlayCursorByDefault.current,
 									});
@@ -1423,6 +1444,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 							videoPath: finalPath,
 							webcamPath,
 							timeOffsetMs: webcamTimeOffsetMs.current,
+							...getFullCamSessionPatch(),
 							hideOverlayCursorByDefault: hideEditorOverlayCursorByDefault.current,
 						});
 
@@ -2201,6 +2223,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 										videoPath: finalVideoPath,
 										webcamPath,
 										timeOffsetMs: webcamTimeOffsetMs.current,
+										...getFullCamSessionPatch(),
 										hideOverlayCursorByDefault:
 											hideEditorOverlayCursorByDefault.current,
 									});
@@ -2272,6 +2295,41 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 			setStarting(false);
 		}
 	};
+
+	const toggleFullCam = useCallback(() => {
+		// Only meaningful while the webcam is actually being captured alongside the screen.
+		if (webcamRecorder.current?.state !== "recording") {
+			return;
+		}
+		const isOn = fullCamTracker.current.toggle(getRecordingDurationMs(Date.now()));
+		setFullCamActive(isOn);
+	}, [getRecordingDurationMs]);
+
+	const toggleFullCamRef = useRef(toggleFullCam);
+	toggleFullCamRef.current = toggleFullCam;
+
+	// Hold the global hotkey only while a webcam recording is running.
+	const shortcutWanted = recording && !paused && webcamEnabled;
+	useEffect(() => {
+		if (!shortcutWanted) {
+			return;
+		}
+		let cancelled = false;
+		const unsubscribe = window.electronAPI.onFullCamToggle(() => toggleFullCamRef.current());
+		void window.electronAPI
+			.setFullCamShortcut(true)
+			.then(({ registered }) => {
+				if (!registered && !cancelled) {
+					toast.warning("Full cam shortcut is already used by another app.");
+				}
+			})
+			.catch((error) => console.warn("Failed to register full cam shortcut:", error));
+		return () => {
+			cancelled = true;
+			unsubscribe();
+			void window.electronAPI.setFullCamShortcut(false).catch(() => undefined);
+		};
+	}, [shortcutWanted]);
 
 	const pauseRecording = useCallback(() => {
 		if (!recording || paused) return;
@@ -2444,6 +2502,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		setWebcamEnabled: persistWebcamEnabled,
 		webcamDeviceId,
 		setWebcamDeviceId: persistWebcamDeviceId,
+		fullCamActive,
 		countdownDelay,
 		setCountdownDelay,
 	};

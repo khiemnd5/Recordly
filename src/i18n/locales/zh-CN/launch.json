@@ -39,6 +39,8 @@
 		"language": "语言",
 		"paused": "已暂停",
 		"rec": "录制中",
+		"fullCam": "全屏摄像头",
+		"fullCamHint": "录制时按 {{shortcut}} 切换全屏摄像头",
 		"resume": "恢复",
 		"pause": "暂停",
 		"stop": "停止",

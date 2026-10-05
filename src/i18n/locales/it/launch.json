@@ -39,6 +39,8 @@
 		"language": "Lingua",
 		"paused": "IN PAUSA",
 		"rec": "REC",
+		"fullCam": "CAM INTERA",
+		"fullCamHint": "Durante la registrazione premi {{shortcut}} per la cam a schermo intero",
 		"resume": "Riprendi",
 		"pause": "Pausa",
 		"stop": "Stop",

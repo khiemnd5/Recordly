@@ -294,11 +294,17 @@ export function useProjectLifecycle(input: Input) {
 							: webcamPath
 								? appearance.webcam.timeOffsetMs
 								: DEFAULT_WEBCAM_TIME_OFFSET_MS,
+					fullCamRanges: webcamPath ? appearance.webcam.fullCamRanges : undefined,
 				},
 				{ preserveProjectPath: Boolean(project.currentProjectPath) },
 			);
 		},
-		[input.currentSourcePath, project.currentProjectPath, appearance.webcam.timeOffsetMs],
+		[
+			input.currentSourcePath,
+			project.currentProjectPath,
+			appearance.webcam.timeOffsetMs,
+			appearance.webcam.fullCamRanges,
+		],
 	);
 	const syncActiveVideoSource = useCallback(
 		async (sourcePath: string, webcamPath?: string | null) => {
@@ -308,6 +314,7 @@ export function useProjectLifecycle(input: Input) {
 						videoPath: sourcePath,
 						webcamPath,
 						timeOffsetMs: appearance.webcam.timeOffsetMs,
+						fullCamRanges: appearance.webcam.fullCamRanges,
 					},
 					{ preserveProjectPath: Boolean(project.currentProjectPath) },
 				);
@@ -316,7 +323,11 @@ export function useProjectLifecycle(input: Input) {
 					preserveProjectPath: Boolean(project.currentProjectPath),
 				});
 		},
-		[appearance.webcam.timeOffsetMs, project.currentProjectPath],
+		[
+			appearance.webcam.timeOffsetMs,
+			appearance.webcam.fullCamRanges,
+			project.currentProjectPath,
+		],
 	);
 	const resetSourceScopedEditorState = useCallback(() => {
 		const current = inputRef.current;
@@ -369,6 +380,7 @@ export function useProjectLifecycle(input: Input) {
 			enabled: false,
 			sourcePath: null,
 			visibleRanges: undefined,
+			fullCamRanges: undefined,
 			timeOffsetMs: DEFAULT_WEBCAM_TIME_OFFSET_MS,
 		}));
 		await syncRecordingSessionWebcam(null);
