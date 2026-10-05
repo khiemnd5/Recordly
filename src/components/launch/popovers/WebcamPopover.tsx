@@ -5,7 +5,7 @@ import {
 	VideoCameraSlash as VideoOff,
 } from "@/components/ui/icons";
 import { useScopedT } from "@/contexts/I18nContext";
-import { formatFullCamShortcut } from "@/lib/fullCamShortcut";
+import { formatFullCamShortcut } from "@/lib/recordingShortcuts";
 import { DropdownItem, HudPopover } from "./PopoverScaffold";
 import { useLaunchPopoverCoordinator } from "./LaunchPopoverCoordinator";
 import type { DeviceOption } from "./launchPopoverTypes";

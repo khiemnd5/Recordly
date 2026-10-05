@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import { app, BrowserWindow, ipcMain } from "electron";
 import { hasAppSetting, readAppSettingsStore, writeAppSettingsStore } from "../../appSettingsStore";
 import { hideCursor } from "../../cursorHider";
-import { setFullCamShortcutActive } from "../../fullCamShortcut";
+import { setRecordingShortcutsActive } from "../../recordingShortcuts";
 import { createCountdownWindow } from "../../windows";
 import { COUNTDOWN_SETTINGS_FILE, RECORDINGS_SETTINGS_FILE, SHORTCUTS_FILE } from "../constants";
 import {
@@ -111,8 +111,8 @@ export function registerSettingsHandlers() {
 		return { success: hideCursor() };
 	});
 
-	ipcMain.handle("set-full-cam-shortcut", (event, active: unknown) => {
-		return { registered: setFullCamShortcutActive(event.sender, active === true) };
+	ipcMain.handle("set-recording-shortcuts", (event, active: unknown) => {
+		return setRecordingShortcutsActive(event.sender, active === true);
 	});
 
 	ipcMain.handle("get-shortcuts", async () => {

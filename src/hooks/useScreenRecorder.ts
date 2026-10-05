@@ -148,6 +148,8 @@ type UseScreenRecorderReturn = {
 	setWebcamDeviceId: (deviceId: string | undefined) => void;
 	/** True while a full cam segment is being recorded. */
 	fullCamActive: boolean;
+	/** True while the recording bar is hidden with its global shortcut. */
+	hudBarHidden: boolean;
 	countdownDelay: number;
 	setCountdownDelay: (delay: number) => void;
 };
@@ -388,6 +390,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const [webcamDeviceId, setWebcamDeviceId] = useState<string | undefined>(undefined);
 	const [countdownDelay, setCountdownDelayState] = useState(3);
 	const [fullCamActive, setFullCamActive] = useState(false);
+	const [hudBarHidden, setHudBarHidden] = useState(false);
 	const fullCamTracker = useRef(createFullCamTracker());
 	const mediaRecorder = useRef<MediaRecorder | null>(null);
 	const webcamRecorder = useRef<MediaRecorder | null>(null);
@@ -2308,28 +2311,38 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 	const toggleFullCamRef = useRef(toggleFullCam);
 	toggleFullCamRef.current = toggleFullCam;
 
-	// Hold the global hotkey only while a webcam recording is running.
-	const shortcutWanted = recording && !paused && webcamEnabled;
+	// Hold the global hotkeys only while a recording is running.
 	useEffect(() => {
-		if (!shortcutWanted) {
+		if (!recording) {
 			return;
 		}
 		let cancelled = false;
-		const unsubscribe = window.electronAPI.onFullCamToggle(() => toggleFullCamRef.current());
+		const unsubscribeFullCam = window.electronAPI.onFullCamToggle(() =>
+			toggleFullCamRef.current(),
+		);
+		const unsubscribeHudBar = window.electronAPI.onHudBarToggle(() =>
+			setHudBarHidden((hidden) => !hidden),
+		);
 		void window.electronAPI
-			.setFullCamShortcut(true)
-			.then(({ registered }) => {
-				if (!registered && !cancelled) {
-					toast.warning("Full cam shortcut is already used by another app.");
+			.setRecordingShortcuts(true)
+			.then(({ fullCam, hudBar }) => {
+				if (cancelled) return;
+				if (!hudBar) {
+					toast.warning("The hide/show recording bar shortcut is used by another app.");
+				}
+				if (!fullCam) {
+					toast.warning("The full cam shortcut is used by another app.");
 				}
 			})
-			.catch((error) => console.warn("Failed to register full cam shortcut:", error));
+			.catch((error) => console.warn("Failed to register recording shortcuts:", error));
 		return () => {
 			cancelled = true;
-			unsubscribe();
-			void window.electronAPI.setFullCamShortcut(false).catch(() => undefined);
+			unsubscribeFullCam();
+			unsubscribeHudBar();
+			setHudBarHidden(false);
+			void window.electronAPI.setRecordingShortcuts(false).catch(() => undefined);
 		};
-	}, [shortcutWanted]);
+	}, [recording]);
 
 	const pauseRecording = useCallback(() => {
 		if (!recording || paused) return;
@@ -2503,6 +2516,7 @@ export function useScreenRecorder(): UseScreenRecorderReturn {
 		webcamDeviceId,
 		setWebcamDeviceId: persistWebcamDeviceId,
 		fullCamActive,
+		hudBarHidden,
 		countdownDelay,
 		setCountdownDelay,
 	};

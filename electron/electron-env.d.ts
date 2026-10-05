@@ -755,7 +755,8 @@ interface Window {
 				hideOverlayCursorByDefault?: boolean;
 			};
 		}>;
-		setFullCamShortcut: (active: boolean) => Promise<{ registered: boolean }>;
+		setRecordingShortcuts: (active: boolean) => Promise<{ fullCam: boolean; hudBar: boolean }>;
+		onHudBarToggle: (callback: () => void) => () => void;
 		onFullCamToggle: (callback: () => void) => () => void;
 		getCurrentVideoPath: () => Promise<{ success: boolean; path?: string }>;
 		clearCurrentVideoPath: () => Promise<{ success: boolean }>;

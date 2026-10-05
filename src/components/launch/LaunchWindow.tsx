@@ -75,6 +75,7 @@ function LaunchWindowContent() {
 		countdownDelay,
 		setCountdownDelay,
 		fullCamActive,
+		hudBarHidden,
 		preparePermissions,
 	} = useScreenRecorder();
 
@@ -441,7 +442,10 @@ function LaunchWindowContent() {
 							ref={hudBarTransformRef}
 							style={{
 								transform: `translate3d(${recordingHudOffset.x}px, ${recordingHudOffset.y}px, 0)`,
+								// Hidden with the recording shortcut; stays mounted so state is kept.
+								visibility: hudBarHidden ? "hidden" : "visible",
 							}}
+							aria-hidden={hudBarHidden}
 						>
 							<motion.div
 								ref={hudBarRef}

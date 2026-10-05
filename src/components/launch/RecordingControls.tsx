@@ -9,7 +9,11 @@ import {
 } from "@/components/ui/icons";
 import { useScopedT } from "@/contexts/I18nContext";
 import { Button, Separator, Tooltip } from "@heroui/react";
+import { formatHudBarShortcut } from "@/lib/recordingShortcuts";
 import styles from "./LaunchWindow.module.css";
+
+const shortcutPlatform =
+	typeof navigator !== "undefined" && /mac/i.test(navigator.platform) ? "darwin" : "other";
 
 interface RecordingControlsProps {
 	onHome: () => void;
@@ -128,7 +132,9 @@ export function RecordingControls({
 				>
 					<MinusIcon className="size-4" />
 				</Button>
-				<Tooltip.Content>{t("recording.hideHud")}</Tooltip.Content>
+				<Tooltip.Content>
+					{t("recording.hideHud")} ({formatHudBarShortcut(shortcutPlatform)})
+				</Tooltip.Content>
 			</Tooltip>
 			<Tooltip>
 				<Button

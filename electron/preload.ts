@@ -1053,8 +1053,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	chooseRecordingsDirectory: () => {
 		return ipcRenderer.invoke("choose-recordings-directory");
 	},
-	setFullCamShortcut: (active: boolean): Promise<{ registered: boolean }> => {
-		return ipcRenderer.invoke("set-full-cam-shortcut", active);
+	setRecordingShortcuts: (active: boolean): Promise<{ fullCam: boolean; hudBar: boolean }> => {
+		return ipcRenderer.invoke("set-recording-shortcuts", active);
+	},
+	onHudBarToggle: (callback: () => void) => {
+		const listener = () => callback();
+		ipcRenderer.on("hud-bar-toggle", listener);
+		return () => {
+			ipcRenderer.removeListener("hud-bar-toggle", listener);
+		};
 	},
 	onFullCamToggle: (callback: () => void) => {
 		const listener = () => callback();

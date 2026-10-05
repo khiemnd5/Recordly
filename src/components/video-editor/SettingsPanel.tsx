@@ -27,7 +27,7 @@ import {
 	isVideoWallpaperSource,
 } from "@/lib/wallpapers";
 import { type AspectRatio } from "@/utils/aspectRatioUtils";
-import { formatFullCamShortcut } from "../../lib/fullCamShortcut";
+import { formatFullCamShortcut } from "../../lib/recordingShortcuts";
 import { useI18n, useScopedT } from "../../contexts/I18nContext";
 import type { AppLocale } from "../../i18n/config";
 import { SUPPORTED_LOCALES } from "../../i18n/config";
