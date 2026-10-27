@@ -141,6 +141,7 @@ export function useProjectOpenActions({
 			appearance.setWebcam((previous) => ({
 				...previous,
 				visibleRanges: undefined,
+				fullCamRanges: undefined,
 				enabled: false,
 				sourcePath: null,
 				timeOffsetMs: DEFAULT_WEBCAM_TIME_OFFSET_MS,

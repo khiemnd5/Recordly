@@ -778,6 +778,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 			videoPath: string;
 			webcamPath?: string | null;
 			timeOffsetMs?: number;
+			fullCamRanges?: { startMs: number; endMs: number }[];
 			hideOverlayCursorByDefault?: boolean;
 		},
 		options?: { preserveProjectPath?: boolean },
@@ -1051,6 +1052,23 @@ contextBridge.exposeInMainWorld("electronAPI", {
 	},
 	chooseRecordingsDirectory: () => {
 		return ipcRenderer.invoke("choose-recordings-directory");
+	},
+	setRecordingShortcuts: (active: boolean): Promise<{ fullCam: boolean; hudBar: boolean }> => {
+		return ipcRenderer.invoke("set-recording-shortcuts", active);
+	},
+	onHudBarToggle: (callback: () => void) => {
+		const listener = () => callback();
+		ipcRenderer.on("hud-bar-toggle", listener);
+		return () => {
+			ipcRenderer.removeListener("hud-bar-toggle", listener);
+		};
+	},
+	onFullCamToggle: (callback: () => void) => {
+		const listener = () => callback();
+		ipcRenderer.on("full-cam-toggle", listener);
+		return () => {
+			ipcRenderer.removeListener("full-cam-toggle", listener);
+		};
 	},
 	getShortcuts: () => {
 		return ipcRenderer.invoke("get-shortcuts");

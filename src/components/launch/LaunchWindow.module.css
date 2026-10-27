@@ -199,3 +199,45 @@
 	background-color: var(--surface);
 	color: var(--foreground);
 }
+
+.fullCamOverlay {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	pointer-events: none;
+	overflow: hidden;
+	background: #000;
+	opacity: 0;
+	transform: scale(0.94);
+	border-radius: 24px;
+	transition:
+		opacity 350ms cubic-bezier(0.65, 0, 0.35, 1),
+		transform 350ms cubic-bezier(0.65, 0, 0.35, 1),
+		border-radius 350ms cubic-bezier(0.65, 0, 0.35, 1);
+	will-change: opacity, transform;
+}
+
+.fullCamOverlay[data-active="true"] {
+	opacity: 1;
+	transform: scale(1);
+	border-radius: 0;
+}
+
+.fullCamOverlayVideo {
+	display: block;
+	height: 100%;
+	width: 100%;
+	object-fit: cover;
+}
+
+/* The draggable bubble would sit on top of the full-screen camera. */
+.fullCamHidesPreview {
+	visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.fullCamOverlay {
+		transition: opacity 120ms linear;
+		transform: none;
+	}
+}

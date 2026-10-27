@@ -31,7 +31,11 @@ import {
 	saveProjectThumbnail,
 	saveRecentProjectPaths,
 } from "../project/manager";
-import { persistRecordingSessionManifest, resolveRecordingSession } from "../project/session";
+import {
+	persistRecordingSessionManifest,
+	resolveRecordingSession,
+	sanitizeFullCamRanges,
+} from "../project/session";
 import {
 	currentProjectPath,
 	currentRecordingSession,
@@ -858,6 +862,7 @@ export function registerProjectHandlers() {
 				videoPath: string;
 				webcamPath?: string | null;
 				timeOffsetMs?: number;
+				fullCamRanges?: { startMs: number; endMs: number }[];
 				hideOverlayCursorByDefault?: boolean;
 			},
 			options?: { preserveProjectPath?: boolean },
@@ -869,6 +874,7 @@ export function registerProjectHandlers() {
 				videoPath: normalizedVideoPath,
 				webcamPath: normalizeVideoSourcePath(session.webcamPath ?? null),
 				timeOffsetMs: normalizeRecordingTimeOffsetMs(session.timeOffsetMs),
+				fullCamRanges: sanitizeFullCamRanges(session.fullCamRanges),
 				hideOverlayCursorByDefault: normalizeBoolean(session.hideOverlayCursorByDefault),
 			});
 			await rememberApprovedLocalReadPath(currentRecordingSession!.videoPath);

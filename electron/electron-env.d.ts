@@ -740,6 +740,7 @@ interface Window {
 				videoPath: string;
 				webcamPath?: string | null;
 				timeOffsetMs?: number;
+				fullCamRanges?: { startMs: number; endMs: number }[];
 				hideOverlayCursorByDefault?: boolean;
 			},
 			options?: { preserveProjectPath?: boolean },
@@ -750,9 +751,13 @@ interface Window {
 				videoPath: string;
 				webcamPath?: string | null;
 				timeOffsetMs?: number;
+				fullCamRanges?: { startMs: number; endMs: number }[];
 				hideOverlayCursorByDefault?: boolean;
 			};
 		}>;
+		setRecordingShortcuts: (active: boolean) => Promise<{ fullCam: boolean; hudBar: boolean }>;
+		onHudBarToggle: (callback: () => void) => () => void;
+		onFullCamToggle: (callback: () => void) => () => void;
 		getCurrentVideoPath: () => Promise<{ success: boolean; path?: string }>;
 		clearCurrentVideoPath: () => Promise<{ success: boolean }>;
 		getRecordingThumbnail: (

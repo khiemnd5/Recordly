@@ -1,5 +1,7 @@
 import { MicrophoneSlashIcon, SpeakerHighIcon, SpeakerXIcon } from "@/components/ui/icons";
 import { useScopedT } from "@/contexts/I18nContext";
+import { isContinuityDevice, sortContinuityDevicesFirst } from "@/lib/continuityDevices";
+import { IphoneContinuityHint } from "./IphoneContinuityHint";
 import { DropdownItem, HudPopover, MicDeviceRow } from "./PopoverScaffold";
 import { useLaunchPopoverCoordinator } from "./LaunchPopoverCoordinator";
 import type { DeviceOption } from "./launchPopoverTypes";
@@ -19,6 +21,8 @@ export function MicPopover({
 	microphoneDeviceId,
 	selectedDeviceId,
 	onSelectDevice,
+	showIphoneHint = false,
+	onRefreshDevices,
 }: {
 	trigger: ReactElement;
 	disabled?: boolean;
@@ -30,6 +34,9 @@ export function MicPopover({
 	microphoneDeviceId?: string;
 	selectedDeviceId?: string;
 	onSelectDevice: (deviceId: string) => void;
+	/** macOS only: explain Continuity Camera when no iPhone is listed. */
+	showIphoneHint?: boolean;
+	onRefreshDevices?: () => void;
 }) {
 	const t = useScopedT("launch");
 	const { isOpen, requestOpen, requestClose } = useLaunchPopoverCoordinator();
@@ -79,7 +86,7 @@ export function MicPopover({
 					{t("recording.selectMicToEnable")}
 				</div>
 			)}
-			{devices.map((device) => (
+			{sortContinuityDevicesFirst(devices).map((device) => (
 				<MicDeviceRow
 					key={device.deviceId}
 					device={device}
@@ -91,6 +98,11 @@ export function MicPopover({
 					onSelect={() => onSelectDevice(device.deviceId)}
 				/>
 			))}
+			{showIphoneHint &&
+				onRefreshDevices &&
+				!devices.some((device) => isContinuityDevice(device.label)) && (
+					<IphoneContinuityHint kind="microphone" onRefresh={onRefreshDevices} />
+				)}
 			{devices.length === 0 && (
 				<div className="text-center text-xs text-[var(--launch-text-muted)] py-4">
 					{t("recording.noMicrophonesFound")}

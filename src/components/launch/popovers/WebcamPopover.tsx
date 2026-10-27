@@ -4,7 +4,11 @@ import {
 	VideoCamera as Video,
 	VideoCameraSlash as VideoOff,
 } from "@/components/ui/icons";
+import { SmartphoneIcon } from "@/components/ui/icons";
 import { useScopedT } from "@/contexts/I18nContext";
+import { isContinuityDevice, sortContinuityDevicesFirst } from "@/lib/continuityDevices";
+import { formatFullCamShortcut } from "@/lib/recordingShortcuts";
+import { IphoneContinuityHint } from "./IphoneContinuityHint";
 import { DropdownItem, HudPopover } from "./PopoverScaffold";
 import { useLaunchPopoverCoordinator } from "./LaunchPopoverCoordinator";
 import type { DeviceOption } from "./launchPopoverTypes";
@@ -26,6 +30,8 @@ export function WebcamPopover({
 	webcamDeviceId,
 	selectedVideoDeviceId,
 	onSelectVideoDevice,
+	showIphoneHint = false,
+	onRefreshDevices,
 }: {
 	trigger: ReactElement;
 	disabled?: boolean;
@@ -40,6 +46,9 @@ export function WebcamPopover({
 	webcamDeviceId?: string;
 	selectedVideoDeviceId?: string;
 	onSelectVideoDevice: (deviceId: string) => void;
+	/** macOS only: explain Continuity Camera when no iPhone is listed. */
+	showIphoneHint?: boolean;
+	onRefreshDevices?: () => void;
 }) {
 	const t = useScopedT("launch");
 	const { isOpen, requestOpen, requestClose } = useLaunchPopoverCoordinator();
@@ -95,6 +104,17 @@ export function WebcamPopover({
 					{t("recording.selectWebcamToEnable")}
 				</div>
 			)}
+			{webcamEnabled && (
+				<div className="px-3 py-1 text-[11px] text-[var(--launch-text-muted)]">
+					{t("recording.fullCamHint", undefined, {
+						shortcut: formatFullCamShortcut(
+							typeof navigator !== "undefined" && /mac/i.test(navigator.platform)
+								? "darwin"
+								: "other",
+						),
+					})}
+				</div>
+			)}
 			{showWebcamControls && (
 				<div className="flex justify-center px-3 py-2">
 					<div className="h-24 w-24 overflow-hidden rounded-2xl bg-[var(--launch-hover)] ring-1 ring-[var(--launch-border-strong)]">
@@ -108,13 +128,15 @@ export function WebcamPopover({
 					</div>
 				</div>
 			)}
-			{videoDevices.map((device) => (
+			{sortContinuityDevicesFirst(videoDevices).map((device) => (
 				<DropdownItem
 					key={device.deviceId}
 					icon={
-						webcamEnabled &&
-						(webcamDeviceId === device.deviceId ||
-							selectedVideoDeviceId === device.deviceId) ? (
+						isContinuityDevice(device.label) ? (
+							<SmartphoneIcon size={16} />
+						) : webcamEnabled &&
+							(webcamDeviceId === device.deviceId ||
+								selectedVideoDeviceId === device.deviceId) ? (
 							<Video size={16} />
 						) : (
 							<VideoOff size={16} />
@@ -130,6 +152,11 @@ export function WebcamPopover({
 					{device.label}
 				</DropdownItem>
 			))}
+			{showIphoneHint &&
+				onRefreshDevices &&
+				!videoDevices.some((device) => isContinuityDevice(device.label)) && (
+					<IphoneContinuityHint kind="camera" onRefresh={onRefreshDevices} />
+				)}
 			{videoDevices.length === 0 && (
 				<div className="text-center text-xs text-[var(--launch-text-muted)] py-4">
 					{t("recording.noWebcamsFound")}

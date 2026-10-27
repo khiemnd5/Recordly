@@ -18,6 +18,8 @@ export type SmokeExportConfig = {
 	webcamInputPath?: string | null;
 	webcamShadow?: number;
 	webcamSize?: number;
+	/** Full cam source-time ranges, e.g. "1000-4000,8000-10000". */
+	webcamFullCamRanges?: { startMs: number; endMs: number }[];
 	pipelineModel?: ExportPipelineModel;
 	backendPreference?: ExportBackendPreference;
 	renderBackend?: ExportRenderBackend;
@@ -69,6 +71,19 @@ function parseSmokeRenderBackend(value: string | null): ExportRenderBackend | un
 	return value === "webgl" || value === "webgpu" ? value : undefined;
 }
 
+function parseSmokeFullCamRanges(
+	value: string | null,
+): { startMs: number; endMs: number }[] | undefined {
+	if (!value) return undefined;
+	const ranges = value.split(",").flatMap((part) => {
+		const [start, end] = part.split("-").map((token) => Number.parseInt(token, 10));
+		return Number.isFinite(start) && Number.isFinite(end) && end > start
+			? [{ startMs: start, endMs: end }]
+			: [];
+	});
+	return ranges.length > 0 ? ranges : undefined;
+}
+
 export function getSmokeExportConfig(search: string): SmokeExportConfig {
 	const params = new URLSearchParams(search);
 	const enabled = params.get("smokeExport") === "1";
@@ -95,6 +110,9 @@ export function getSmokeExportConfig(search: string): SmokeExportConfig {
 			: undefined,
 		webcamSize: enabled
 			? parseSmokeExportNonNegativeNumber(params.get("smokeWebcamSize"))
+			: undefined,
+		webcamFullCamRanges: enabled
+			? parseSmokeFullCamRanges(params.get("smokeFullCam"))
 			: undefined,
 		pipelineModel:
 			enabled && params.get("smokePipelineModel") === "modern"

@@ -38,6 +38,7 @@ import {
 import { MicPopover } from "./popovers/MicPopover";
 import { SourcePopover } from "./popovers/SourcePopover";
 import { WebcamPopover } from "./popovers/WebcamPopover";
+import { FullCamOverlay } from "./FullCamOverlay";
 import { RecordingControls } from "./RecordingControls";
 
 export function LaunchWindow() {
@@ -73,6 +74,8 @@ function LaunchWindowContent() {
 		setWebcamDeviceId,
 		countdownDelay,
 		setCountdownDelay,
+		fullCamActive,
+		hudBarHidden,
 		preparePermissions,
 	} = useScreenRecorder();
 
@@ -84,14 +87,17 @@ function LaunchWindowContent() {
 		useLaunchWindowActions();
 
 	const showWebcamControls = webcamEnabled && !recording;
-	const { devices, selectedDeviceId, setSelectedDeviceId } = useMicrophoneDevices(
-		microphoneEnabled || openId === "mic",
-		microphoneDeviceId,
-	);
+	const {
+		devices,
+		selectedDeviceId,
+		setSelectedDeviceId,
+		refresh: refreshMicrophoneDevices,
+	} = useMicrophoneDevices(microphoneEnabled || openId === "mic", microphoneDeviceId);
 	const {
 		devices: videoDevices,
 		selectedDeviceId: selectedVideoDeviceId,
 		setSelectedDeviceId: setSelectedVideoDeviceId,
+		refresh: refreshVideoDevices,
 	} = useVideoDevices(webcamEnabled || openId === "webcam");
 
 	const { hudOverlayMousePassthroughSupported, platform } =
@@ -208,6 +214,7 @@ function LaunchWindowContent() {
 			onHome={openHome}
 			paused={paused}
 			microphoneEnabled={microphoneEnabled}
+			fullCamActive={fullCamActive}
 			elapsed={elapsed}
 			onPauseResume={paused ? resumeRecording : pauseRecording}
 			onStopRecording={toggleRecording}
@@ -261,6 +268,8 @@ function LaunchWindowContent() {
 				microphoneEnabled={microphoneEnabled}
 				onDisableMicrophone={() => setMicrophoneEnabled(false)}
 				devices={devices}
+				showIphoneHint={platform === "darwin"}
+				onRefreshDevices={refreshMicrophoneDevices}
 				microphoneDeviceId={microphoneDeviceId}
 				selectedDeviceId={selectedDeviceId}
 				onSelectDevice={(deviceId) => {
@@ -305,6 +314,8 @@ function LaunchWindowContent() {
 				showWebcamControls={showWebcamControls}
 				setWebcamPreviewNode={setWebcamPreviewNode}
 				videoDevices={videoDevices}
+				showIphoneHint={platform === "darwin"}
+				onRefreshDevices={refreshVideoDevices}
 				webcamDeviceId={webcamDeviceId}
 				selectedVideoDeviceId={selectedVideoDeviceId}
 				onSelectVideoDevice={(deviceId) => {
@@ -420,6 +431,11 @@ function LaunchWindowContent() {
 		<HudInteractionContext.Provider
 			value={{ onMouseEnter: handleHudMouseEnter, onMouseLeave: handleHudMouseLeave }}
 		>
+			<FullCamOverlay
+				enabled={recording && webcamEnabled && hudOverlayMousePassthroughSupported === true}
+				active={fullCamActive && !paused}
+				deviceId={webcamDeviceId}
+			/>
 			<div
 				className="w-full flex justify-center bg-transparent overflow-visible items-end pb-5 pointer-events-none"
 				style={{ height: "100vh" }}
@@ -433,7 +449,10 @@ function LaunchWindowContent() {
 							ref={hudBarTransformRef}
 							style={{
 								transform: `translate3d(${recordingHudOffset.x}px, ${recordingHudOffset.y}px, 0)`,
+								// Hidden with the recording shortcut; stays mounted so state is kept.
+								visibility: hudBarHidden ? "hidden" : "visible",
 							}}
+							aria-hidden={hudBarHidden}
 						>
 							<motion.div
 								ref={hudBarRef}
@@ -501,7 +520,7 @@ function LaunchWindowContent() {
 						{showRecordingWebcamPreview && (
 							<div
 								ref={recordingWebcamPreviewContainerRef}
-								className={`${styles.recordingWebcamPreview} ${styles.electronNoDrag} pointer-events-auto`}
+								className={`${styles.recordingWebcamPreview} ${styles.electronNoDrag} pointer-events-auto ${fullCamActive ? styles.fullCamHidesPreview : ""}`}
 								data-hud-interactive
 								title={t("recording.webcam")}
 								style={{

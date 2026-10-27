@@ -225,6 +225,32 @@ export function getWebcamCropSourceRect(
 	return { sx, sy, sw, sh };
 }
 
+/**
+ * Percent-based placement of the (cropped) webcam video so it cover-fits a
+ * container with the given width / height aspect.
+ */
+export function getWebcamCoverContentPlacement(
+	cropRegion: Partial<CropRegion> | null | undefined,
+	sourceWidth: number,
+	sourceHeight: number,
+	targetAspect: number,
+): { left: string; top: string; width: string; height: string } {
+	const { sx, sy, sw, sh } = getWebcamCropSourceRect(cropRegion, sourceWidth, sourceHeight);
+	const aspect = Math.max(0.01, targetAspect);
+	const coverScale = Math.max(aspect / sw, 1 / sh);
+	const drawWidth = sourceWidth * coverScale;
+	const drawHeight = sourceHeight * coverScale;
+	const drawX = (aspect - sw * coverScale) / 2 - sx * coverScale;
+	const drawY = (1 - sh * coverScale) / 2 - sy * coverScale;
+
+	return {
+		left: `${(drawX / aspect) * 100}%`,
+		top: `${drawY * 100}%`,
+		width: `${(drawWidth / aspect) * 100}%`,
+		height: `${drawHeight * 100}%`,
+	};
+}
+
 export function getCropMatchedWebcamHeightPercent(
 	widthPercent: number,
 	heightPercent: number,

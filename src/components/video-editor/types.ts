@@ -136,6 +136,8 @@ export type WebcamPositionPreset =
 export interface WebcamOverlaySettings {
 	/** Source-time intervals containing webcam footage in an imported sequence. */
 	visibleRanges?: { startMs: number; endMs: number }[];
+	/** Source-time ms ranges where the webcam fills the whole frame. Per project, never a preset. */
+	fullCamRanges?: { startMs: number; endMs: number }[];
 	enabled: boolean;
 	sourcePath: string | null;
 	timeOffsetMs: number;

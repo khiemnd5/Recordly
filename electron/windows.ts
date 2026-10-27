@@ -88,6 +88,9 @@ function getEditorWindowQuery(): Record<string, string> {
 		if (process.env.RECORDLY_SMOKE_EXPORT_WEBCAM_SIZE) {
 			query.smokeWebcamSize = process.env.RECORDLY_SMOKE_EXPORT_WEBCAM_SIZE;
 		}
+		if (process.env.RECORDLY_SMOKE_EXPORT_FULL_CAM) {
+			query.smokeFullCam = process.env.RECORDLY_SMOKE_EXPORT_FULL_CAM;
+		}
 		if (process.env.RECORDLY_SMOKE_EXPORT_PIPELINE) {
 			query.smokePipelineModel = process.env.RECORDLY_SMOKE_EXPORT_PIPELINE;
 		}

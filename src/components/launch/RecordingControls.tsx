@@ -9,12 +9,17 @@ import {
 } from "@/components/ui/icons";
 import { useScopedT } from "@/contexts/I18nContext";
 import { Button, Separator, Tooltip } from "@heroui/react";
+import { formatHudBarShortcut } from "@/lib/recordingShortcuts";
 import styles from "./LaunchWindow.module.css";
+
+const shortcutPlatform =
+	typeof navigator !== "undefined" && /mac/i.test(navigator.platform) ? "darwin" : "other";
 
 interface RecordingControlsProps {
 	onHome: () => void;
 	paused: boolean;
 	microphoneEnabled: boolean;
+	fullCamActive?: boolean;
 	elapsed: number;
 	onPauseResume: () => void;
 	onStopRecording: () => void;
@@ -26,6 +31,7 @@ export function RecordingControls({
 	onHome,
 	paused,
 	microphoneEnabled,
+	fullCamActive = false,
 	elapsed,
 	onPauseResume,
 	onStopRecording,
@@ -59,6 +65,14 @@ export function RecordingControls({
 				</span>
 				{paused && (
 					<span className="text-xs text-muted-foreground">{t("recording.paused")}</span>
+				)}
+				{fullCamActive && !paused && (
+					<span
+						className="rounded-full bg-accent/15 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-accent"
+						aria-live="polite"
+					>
+						{t("recording.fullCam")}
+					</span>
 				)}
 			</div>
 			<Tooltip>
@@ -118,7 +132,9 @@ export function RecordingControls({
 				>
 					<MinusIcon className="size-4" />
 				</Button>
-				<Tooltip.Content>{t("recording.hideHud")}</Tooltip.Content>
+				<Tooltip.Content>
+					{t("recording.hideHud")} ({formatHudBarShortcut(shortcutPlatform)})
+				</Tooltip.Content>
 			</Tooltip>
 			<Tooltip>
 				<Button

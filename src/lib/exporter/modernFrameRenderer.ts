@@ -53,7 +53,11 @@ import {
 } from "@/components/video-editor/videoPlayback/motionSmoothing";
 import { getSceneEffectMetrics } from "@/components/video-editor/videoPlayback/sceneEffects";
 import { resolveSceneZoomTarget } from "@/components/video-editor/videoPlayback/sceneMotion";
-import { getWebcamMediaTargetTimeSeconds, isWebcamVisibleAtSourceTime } from "@/components/video-editor/videoPlayback/webcamSync";
+import { getFullCamBlend, lerp } from "@/components/video-editor/fullCam";
+import {
+	getWebcamMediaTargetTimeSeconds,
+	isWebcamVisibleAtSourceTime,
+} from "@/components/video-editor/videoPlayback/webcamSync";
 import {
 	applyZoomTransform,
 	computeZoomTransform,
@@ -2725,7 +2729,12 @@ export class FrameRenderer {
 
 	private updateWebcamOverlay(referenceTimeSeconds = this.currentVideoTime): void {
 		const webcam = this.config.webcam;
-		if (!webcam?.enabled || !isWebcamVisibleAtSourceTime(webcam, referenceTimeSeconds) || !this.webcamRootContainer || !this.webcamMaskGraphics) {
+		if (
+			!webcam?.enabled ||
+			!isWebcamVisibleAtSourceTime(webcam, referenceTimeSeconds) ||
+			!this.webcamRootContainer ||
+			!this.webcamMaskGraphics
+		) {
 			if (this.webcamRootContainer) {
 				this.webcamRootContainer.visible = false;
 			}
@@ -2823,19 +2832,21 @@ export class FrameRenderer {
 			dimensions.width,
 			dimensions.height,
 		);
-		const shadowStrength = getWebcamShadowStrength(webcam.shadow ?? 0);
+		const baseShadowStrength = getWebcamShadowStrength(webcam.shadow ?? 0);
+		// Full cam: morph the bubble to the whole frame (matches the editor preview).
+		const fullCamBlend = getFullCamBlend(webcam.fullCamRanges, referenceTimeSeconds * 1000);
 
 		this.webcamRootContainer.visible = true;
 
 		const nextLayout: WebcamLayoutCache = {
 			sourceWidth: renderableWebcamSource.width,
 			sourceHeight: renderableWebcamSource.height,
-			width: dimensions.width,
-			height: dimensions.height,
-			positionX: position.x,
-			positionY: position.y,
-			radius,
-			shadowStrength,
+			width: lerp(dimensions.width, this.config.width, fullCamBlend),
+			height: lerp(dimensions.height, this.config.height, fullCamBlend),
+			positionX: lerp(position.x, 0, fullCamBlend),
+			positionY: lerp(position.y, 0, fullCamBlend),
+			radius: lerp(radius, 0, fullCamBlend),
+			shadowStrength: baseShadowStrength * (1 - fullCamBlend),
 			mirror: webcam.mirror,
 		};
 

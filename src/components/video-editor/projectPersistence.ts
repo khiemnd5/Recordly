@@ -63,6 +63,7 @@ import {
 	type ZoomRegion,
 	type ZoomTransitionEasing,
 } from "./types";
+import { normalizeFullCamRanges } from "./fullCam";
 import { convertLegacyWebcamRadiusToRoundness, normalizeWebcamCropRegion } from "./webcamOverlay";
 
 export const PROJECT_VERSION = 2;
@@ -949,6 +950,7 @@ export function normalizeProjectEditor(editor: Partial<ProjectEditorState>): Pro
 						)
 						.map(({ startMs, endMs }) => ({ startMs, endMs }))
 				: undefined,
+			fullCamRanges: normalizeFullCamRanges(webcam.fullCamRanges),
 			enabled:
 				typeof webcam.enabled === "boolean"
 					? webcam.enabled
