@@ -13,8 +13,11 @@ export function useMicrophoneDevices(enabled: boolean = true, preferredDeviceId?
 	const [selectedDeviceId, setSelectedDeviceId] = useState<string>("default");
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [refreshTick, setRefreshTick] = useState(0);
 
 	useEffect(() => {
+		// refreshTick re-runs this effect when the user asks to rescan devices.
+		void refreshTick;
 		if (!enabled) {
 			return;
 		}
@@ -107,9 +110,10 @@ export function useMicrophoneDevices(enabled: boolean = true, preferredDeviceId?
 			mounted = false;
 			navigator.mediaDevices.removeEventListener("devicechange", handleDeviceChange);
 		};
-	}, [enabled, preferredDeviceId]);
+	}, [enabled, preferredDeviceId, refreshTick]);
 
 	return {
+		refresh: () => setRefreshTick((tick) => tick + 1),
 		devices,
 		selectedDeviceId,
 		setSelectedDeviceId,

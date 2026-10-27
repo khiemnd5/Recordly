@@ -1,6 +1,7 @@
 import { ToggleButton } from "@heroui/react";
 import { Button } from "@/components/ui/button";
-import { MicrophoneIcon, MicrophoneSlashIcon } from "@/components/ui/icons";
+import { MicrophoneIcon, MicrophoneSlashIcon, SmartphoneIcon } from "@/components/ui/icons";
+import { isContinuityDevice } from "@/lib/continuityDevices";
 import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useAudioLevelMeter } from "@/hooks/useAudioLevelMeter";
@@ -74,7 +75,9 @@ export function MicDeviceRow({
 			onClick={onSelect}
 		>
 			<span className="shrink-0">
-				{selected ? (
+				{isContinuityDevice(device.label) ? (
+					<SmartphoneIcon weight={selected ? "fill" : "regular"} size={16} />
+				) : selected ? (
 					<MicrophoneIcon weight="fill" size={16} />
 				) : (
 					<MicrophoneSlashIcon size={16} />

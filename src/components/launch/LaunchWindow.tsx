@@ -87,14 +87,17 @@ function LaunchWindowContent() {
 		useLaunchWindowActions();
 
 	const showWebcamControls = webcamEnabled && !recording;
-	const { devices, selectedDeviceId, setSelectedDeviceId } = useMicrophoneDevices(
-		microphoneEnabled || openId === "mic",
-		microphoneDeviceId,
-	);
+	const {
+		devices,
+		selectedDeviceId,
+		setSelectedDeviceId,
+		refresh: refreshMicrophoneDevices,
+	} = useMicrophoneDevices(microphoneEnabled || openId === "mic", microphoneDeviceId);
 	const {
 		devices: videoDevices,
 		selectedDeviceId: selectedVideoDeviceId,
 		setSelectedDeviceId: setSelectedVideoDeviceId,
+		refresh: refreshVideoDevices,
 	} = useVideoDevices(webcamEnabled || openId === "webcam");
 
 	const { hudOverlayMousePassthroughSupported, platform } =
@@ -265,6 +268,8 @@ function LaunchWindowContent() {
 				microphoneEnabled={microphoneEnabled}
 				onDisableMicrophone={() => setMicrophoneEnabled(false)}
 				devices={devices}
+				showIphoneHint={platform === "darwin"}
+				onRefreshDevices={refreshMicrophoneDevices}
 				microphoneDeviceId={microphoneDeviceId}
 				selectedDeviceId={selectedDeviceId}
 				onSelectDevice={(deviceId) => {
@@ -309,6 +314,8 @@ function LaunchWindowContent() {
 				showWebcamControls={showWebcamControls}
 				setWebcamPreviewNode={setWebcamPreviewNode}
 				videoDevices={videoDevices}
+				showIphoneHint={platform === "darwin"}
+				onRefreshDevices={refreshVideoDevices}
 				webcamDeviceId={webcamDeviceId}
 				selectedVideoDeviceId={selectedVideoDeviceId}
 				onSelectVideoDevice={(deviceId) => {
